@@ -1,0 +1,1003 @@
+<!-- Project 2 -->
+<!-- Author: Ben Holzhauer -->
+<!-- Date: 10/18/2017 -->
+<!-- Class: CS316-001 -->
+<!-- Purpose: Play card-based game, Xarnker, with computer player -->
+
+<!-- Note - Starter code, provided by Paul Linton and Paul Piwowarski, is used as a starting reference -->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Xarnker</title>
+		
+		<!-- Define CSS styling -->
+		<style type="text/css">
+			body
+			{
+				background-color: black;
+				color: white;
+				font-family: "Trebuchet MS";
+			}
+
+			.wrapper
+			{
+				background-color: #076324;
+				border: 10px solid white;
+				border-radius: 25px;
+				margin: 0 auto;
+				padding: 10px;
+				width: 90%;
+				height: 90vh;
+			}
+
+			.stats
+			{
+				display: block;
+				margin: 0 auto;
+				padding-top: 1px;
+			}
+
+			.playerStats, .computerStats
+			{
+				display: inline-block;
+				width: 15%;
+				height: 15vh;
+				text-align: center;
+			}
+
+			#pScore, #cScore
+			{
+				font-size: 2em;
+				font-weight: bold;
+			}
+
+			#pWins, #cWins
+			{
+				font-size: 2em;
+				font-weight: bold;
+			}
+
+			.gameStats
+			{
+				font-size: 1.25em;
+				display: inline-block;
+				margin-top: 1vh;
+				width: 10%;
+				height: 15vh;
+				vertical-align: top;
+			}
+
+			#title
+			{
+				font-size: 2em;
+			}
+
+			.cards
+			{
+				display: block;
+				padding: 10px;
+			}
+
+			.computerCards, .piles, .playerCards
+			{
+				display: block;
+				margin: 0 auto;
+				padding: 8px;
+				height: 100px;
+			}
+
+			#computerCard1, #computerCard2, #computerCard3, #deck, #discard, #playerCard1, #playerCard2, #playerCard3
+			{
+				border: 2px solid white;
+				border-radius: 10px;
+				display: inline-block;
+				margin-left: 2px;
+				margin-right: 2px;
+				padding: 2px;
+				width: 73px;
+				height: 99px;
+			}
+			
+			#playerCard4
+			{
+				border: 2px solid white;
+                                border-radius: 10px;
+                                display: none;
+                                padding: 2px;
+                                width: 73px;
+                                height: 99px;
+			}
+
+			.hud
+                        {
+                                display: block;
+                                margin: 0 auto;
+				padding-top: 2vh;
+				height: 15vh;
+                        }
+
+			#discardButton
+			{
+				display: none;
+			}
+
+			#instructions
+			{
+				font-style: italic;
+			}
+		</style>
+
+		<!-- Define script for gameplay -->
+		<script type="text/javascript">
+			// Define deck and hand size constants
+			var DECKSIZE = 40;
+			var HANDSIZE = 3;
+
+			// Current game and round variables
+			var currentGame = 0; // Initialize current game as none
+			var currentRound;
+
+			// Score variables
+			var playerScore;
+			var computerScore;
+
+			// Initialize game win variables
+			var playerWins = 0;
+			var computerWins = 0;
+
+			// Initialize deck arrays
+			var startingDeck = new Array(DECKSIZE); // Starting deck
+			var shuffledDeck = new Array(DECKSIZE); // Shuffled deck
+
+			// Discard pile variables
+			var discardPile = new Array(); // Discard pile
+			var discardCard; // Top of discard pile
+			var discardSuit; // Top of discard pile suit
+			var discardValue; // Top of discard pile value
+
+			// Deck index for getting new cards
+                        var deckIndex;
+
+			// Initialize player arrays
+			var playerHand = new Array(HANDSIZE); // Player hand
+			var playerCardImgs = new Array(HANDSIZE); // Player card images
+
+			// Initialize computer arrays
+			var computerHand = new Array(HANDSIZE); // Computer hand
+			var computerCardImgs = new Array(HANDSIZE); // Computer card images
+			var computerSuits = new Array(HANDSIZE); // Computer hand suits
+                        var computerValues = new Array(HANDSIZE); // Computer hand values
+
+			// Boolean variables for gameplay
+			var canDraw;
+			var canDiscard;
+
+			var cardBackImg; // Card back image
+
+			// New card variables
+			var newCard; // New card
+			var newCardImg; // New card image
+
+			// Index of player card to discard
+			var playerDiscardIndex;
+
+			// Function for shuffling starting deck
+			function Shuffle()
+			{
+				// Set staring deck card values, 1 through 40
+				for (var i = 0; i < DECKSIZE; i++)
+				{
+					startingDeck[i] = i + 1;
+				}			
+
+				// Construct shuffled deck from randomly-selected cards in starting deck
+				var randomCard;
+				for (var j = 0; j < DECKSIZE; j++)
+				{
+					randomCard = Math.round( Math.random() * (DECKSIZE - j - 1) );
+					shuffledDeck[j] = startingDeck[randomCard];
+					startingDeck.splice(randomCard, 1);
+				}
+			
+				// Initialize deck index at zero
+				deckIndex = 0;
+			}
+
+			// Function for dealing out cards to players
+			function Deal()
+			{
+				// Get card back image
+				cardBackImg = "<img src='cards/cardback.png' />";
+
+				// Fill computer hand and get card images
+				for (var i = 0; i < HANDSIZE; i++)
+				{
+					computerHand[i] = shuffledDeck[deckIndex++];
+					computerCardImgs[i] = "<img src='cards/" + computerHand[i] + ".png' />";
+					
+					// Initially hide computer hand
+					var computerCard = "computerCard" + (i + 1);
+					document.getElementById(computerCard).innerHTML = cardBackImg;
+				}
+
+				// Fill player hand and get card images
+				for (var j = 0; j < HANDSIZE; j++)
+				{
+					playerHand[j] = shuffledDeck[deckIndex++];
+					playerCardImgs[j] = "<img src='cards/" + playerHand[j] + ".png' />";
+					
+					// Show player hand
+					var playerCard = "playerCard" + (j + 1);
+					document.getElementById(playerCard).innerHTML = playerCardImgs[j];
+				}
+
+				// Keep deck face down
+				document.getElementById("deck").innerHTML = cardBackImg;
+
+				// Add card from deck to empty discard pile and display
+				discardPile = [];
+				discardPile.push(shuffledDeck[deckIndex++]);
+				var discardImg = "<img src='cards/" + discardPile[0] + ".png' />";
+				document.getElementById("discard").innerHTML = discardImg;
+
+				// Hide new game button
+				document.getElementById("newGameButton").value = "New Game";
+				document.getElementById("newGameButton").style.display = "none";
+
+				// Allow and tell player to select card
+				canDraw = true;
+				document.getElementById("instructions").innerHTML = "Pick a card from the deck or the discard pile.";
+
+				// Draw borders around cards to select from
+				document.getElementById("deck").style.border = "5px solid #0DFF4A";
+				document.getElementById("discard").style.border = "5px solid #0DFF4A";
+			}
+
+			// Function to check for "three of a kind"
+			function IsThreeOfAKind(values)
+			{
+				// Initialize result as true
+				var result = true;
+
+				// Check for "three of a kind"
+				for (var i = 1; i < HANDSIZE; i++)
+				{
+					if (values[i] != values[i-1])
+					{
+						result = false;
+					}
+				}
+
+				// Return result
+				return result;
+			}
+
+			// Function to check for "low straight" (three card values are 1, 2, and 3 of any suit)
+			function IsLowStraight(values)
+			{
+				// Initialize result as false
+				var result = false
+
+				// Sort card values numerically
+				var sortedValues = values.slice();
+				sortedValues.sort();
+
+				// Check for "low straight" values
+				if (sortedValues[0] == 1 && sortedValues[1] == 2 && sortedValues[2] == 3)
+				{
+					result = true;
+				}
+			
+				// Return result
+				return result;
+			}
+
+			// Function to check for "almost straight" (three card values are 1, 3, and 4 of any suit)
+			function IsAlmostStraight(values)
+			{
+				// Initialize result as false
+                                var result = false
+
+                                // Sort card values numerically
+                                var sortedValues = values.slice();
+				sortedValues.sort();
+
+                                // Check for "almost straight" values
+                                if (sortedValues[0] == 1 && sortedValues[1] == 3 && sortedValues[2] == 4)
+                                {
+                                        result = true;
+                                }
+
+                                // Return result
+                                return result;
+			}
+
+			// Function for getting values of each suit
+			function GetValuesOfSuits(suits, values)
+			{
+				// Construct nested array for present values of each suit
+                                var suitValues = new Array(4);
+                                for (var i = 0; i < 4; i++)
+                                {
+                                        suitValues[i] = new Array();
+                                }
+
+                                // Add present values of each suit to corresponding array
+                                for (var j = 0; j < HANDSIZE; j++)
+                                {
+                                        suitValues[suits[j] - 1].push(values[j]);
+                                }
+
+				// Return nested array
+				return suitValues;
+			}
+
+			// Function for getting sum of same-suit cards
+			function GetSameSuitSum(suits, values)
+			{
+				// Initialize sum as zero
+				var sum = 0;
+
+				// Get values of each suit
+				var suitValues = GetValuesOfSuits(suits, values);
+
+				// Determine sum of same-suit cards
+                                for (var k = 0; k < 4; k++)
+				{
+					if (suitValues[k].length >= 2)
+					{
+						for (var l = 0; l < suitValues[k].length; l++)
+						{
+							sum += suitValues[k][l];
+						}
+					}
+				}
+
+				// Return sum
+				return sum;
+		
+			}
+
+			// Function to get card suit and value arrays from hand
+			function GetSuitsAndValues(hand)
+			{
+				// Initialize array of card suits and values
+				var suitsAndValues = new Array(2);
+
+				// Initialize card suit and value arrays for nested array
+                                var suits = new Array(hand.length);
+                                var values = new Array(hand.length);
+
+                                // Determine card suits and values
+                                for (var i = 0; i < hand.length; i++)
+                                {
+                                        suits[i] = Math.floor((hand[i] - 1) / 10) + 1;
+                                        values[i] = ((hand[i] - 1) % 10) + 1;
+                                }
+
+				// Return nested array
+				suitsAndValues[0] = suits;
+				suitsAndValues[1] = values;
+				return suitsAndValues;
+			}
+
+			// Function to get current score from hand
+			function GetScore(hand)
+			{	
+				// Initialize score
+				var score = 0;
+
+				// Get card suit and value arrays
+				var suitsAndValues = GetSuitsAndValues(hand);
+				var suits = suitsAndValues[0];
+				var values = suitsAndValues[1];
+
+				// Check for "three of a kind" and set score
+				if (IsThreeOfAKind(values) == true)
+				{
+					score = 50;
+				}
+				// Check for "low straight" and set score
+				else if (IsLowStraight(values) == true)
+				{
+					score = 40;
+				}
+				// Check for "almost straight" and set score
+				else if (IsAlmostStraight(values) == true)
+				{
+					score = 31;
+				}
+
+				// Get sum of same-suit cards
+				var sum = GetSameSuitSum(suits, values);
+				// If sum is greater than score, replace score
+				if (sum > score)
+				{
+					score = sum;
+				}
+
+				// Return score
+				return score;
+			}
+			
+			// Function to show round results
+			function ShowResults()
+			{
+				// Update current score and display
+				playerScore = GetScore(playerHand);
+                                computerScore = GetScore(computerHand);
+				document.getElementById("pScore").innerHTML = playerScore;
+				document.getElementById("cScore").innerHTML = computerScore;
+
+				// Determine game winner after third round and start new game
+				if (currentRound == 3)
+				{
+					// Update current wins
+                              		if (playerScore >= computerScore)
+					{
+						// Player wins
+						playerWins += 1;
+						document.getElementById("instructions").innerHTML = "<font color='yellow'><b>You win!</b></font>";
+					}
+					else
+					{
+						// Computer wins
+						computerWins += 1;
+						document.getElementById("instructions").innerHTML = "<font color='darkred'><b>You lose!</b></font>";
+					}
+
+					// Display current wins
+					document.getElementById("pWins").innerHTML = playerWins;
+					document.getElementById("cWins").innerHTML = computerWins;
+
+					// Show computer cards
+					for (var i = 0; i < HANDSIZE; i++)
+                                	{
+                                        	var computerCard = "computerCard" + (i + 1);
+                                        	document.getElementById(computerCard).innerHTML = computerCardImgs[i];
+                                	}
+
+					// Show new game button and tell player to start new game of five
+					if (currentGame < 5)
+					{
+                               	 		document.getElementById("newGameButton").style.display = "";
+                                        	document.getElementById("instructions").innerHTML += "<br>Press 'New Game' to start the next game.";
+					}
+					// When all five games are over, determine final winner
+					else{
+						if (playerWins > computerWins)
+						{
+							// Player is declared champion
+							document.getElementById("instructions").innerHTML = "Congratulations! You are the champion!";
+							document.getElementById("instructions").style = "color: yellow; font-size: 2em; font-weight: bold";
+						}
+						else{
+							// Player is declared loser
+							document.getElementById("instructions").innerHTML = "Failure! You are the loser!";
+							document.getElementById("instructions").style = "color: darkred; font-size: 2em; font-weight: bold";
+						}
+					}
+				}
+				// Otherwise, start new round
+				else
+				{
+					// Update rounds
+					currentRound += 1;
+					document.getElementById("roundNum").innerHTML = currentRound;
+
+					// Allow player to pick up new card again
+					canDraw = true;
+					document.getElementById("instructions").innerHTML = "Your turn again! Pick a card from the deck or the discard pile.";
+
+					// Draw borders around cards to select from
+                                	document.getElementById("deck").style.border = "5px solid #0DFF4A";
+                                	document.getElementById("discard").style.border = "5px solid #0DFF4A";
+                        	}
+			}
+
+			// Function to update discard pile
+                        function UpdateDiscardPile()
+                        {
+                                // Display next card from discard pile, or none if pile is empty
+                                if (discardPile.length > 0)
+                                {
+                                        document.getElementById("discard").innerHTML = "<img src='cards/"
+                                                + discardPile[0] + ".png' />";
+                                }
+                                else
+                                {
+                                        document.getElementById("discard").innerHTML = "";
+                                }
+                        }
+                                     
+			// Function for computer to swap desired card with card from discard pile
+			function ComputerSwapWithDiscard(card)
+			{
+				computerHand[computerHand.indexOf(card)] = discardCard;
+                                discardPile[0] = card;
+			}
+
+			// Function for computer to pick up next card from deck
+			function ComputerGetNextCard()
+			{
+				// Initialize array for next card info (card itself, suit, and value)
+				var nextCardInfo = new Array(3);
+
+				var nextCard = shuffledDeck[deckIndex++]; // Get card itself
+				nextCardInfo[0] = nextCard;
+                                nextCardInfo[1] = Math.floor((nextCard - 1) / 10) + 1; // Get suit
+                                nextCardInfo[2] = ((nextCard - 1) % 10) + 1; // Get value
+
+				// Return array of next card info
+				return nextCardInfo;
+			}
+
+			// Function for computer to determine useless card in hand (based on given conditions)
+			function ComputerGetUselessCard(conditionArg1, conditionArg2)
+			{
+				// Determine useless card given conditions
+				var uselessCard;
+				for (var i = 0; i < HANDSIZE; i++)
+				{
+					if (conditionArg1[i] != conditionArg2)
+					{
+						uselessCard = computerHand[i];
+					}
+				}
+
+				// Return useless card
+				return uselessCard;	
+			}
+
+			// Function for computer to determine smallest card not of some suit in hand
+			function ComputerGetSmallDiffCard(pileSuit)
+			{
+				// Determine smallest card not of some suit given pile suit (discard or deck)
+				var smallDiffCard;
+				var minNotSuitValue = 11; // Initialize smallest found value as 11
+				for (var i = 0; i < HANDSIZE; i++)
+				{
+					if (pileSuit != computerSuits[i] && computerValues[i] < minNotSuitValue)
+					{
+						smallDiffCard = computerHand[i];
+						minNotSuitValue = computerValues[i];
+					}
+				}
+
+				// Return card
+				return smallDiffCard;
+			}
+
+			// Function for computer to pick up card from discard pile or deck (based on given conditions)
+                        function ComputerPickFromPile(conditionArg1, conditionArg2, conditionArg3, conditionArg4, nextIndex, card)
+                        {
+                                // Check if discard card is needed given conditions
+                                if (discardPile.length > 0 && conditionArg1 == conditionArg2 && conditionArg3 > conditionArg4)
+                                {
+                                        // Swap given card with discard card
+                                        ComputerSwapWithDiscard(card);
+                                }
+                                // Otherwise, check in deck
+                                else
+                                {
+                                        // Get next card from deck
+                                        var nextCardInfo = ComputerGetNextCard();
+
+                                        // Check if next card is needed given conditions
+                                        if (nextCardInfo[nextIndex] == conditionArg2 && nextCardInfo[2] > conditionArg4)
+                                        {
+                                                // Discard card in hand
+                                                computerHand[computerHand.indexOf(card)] = nextCardInfo[0];
+                                                discardPile.unshift(card);
+                                        }
+                                        // Otherwise, discard next card
+                                        else
+                                        {
+                                                discardPile.unshift(nextCardInfo[0]);
+                                        }
+                                }
+                        }
+
+			// Function for computer to attempt getting "low straight" or "almost straight"
+			function ComputerGetStraight(straightType, straightTuple)
+			{
+				// Determine "straight" set from given type ("low" or "almost")
+                                var straightSet;
+				if (straightType == "low")
+				{
+					straightSet = new Array(1, 2, 3);
+				}
+				else if (straightType == "almost")
+				{
+					straightSet = new Array(1, 3, 4);
+				}
+
+				// Determine needed value for "straight"
+                                var neededValue;
+                                for (var i = 0; i < HANDSIZE; i++)
+                                {
+					// If tuple does not contain certain value of set, set needed value as such
+                                	if (straightTuple.indexOf(straightSet[i]) < 0)
+                                        {
+                                        	neededValue = straightSet[i];
+                                        }
+                                }
+
+                                // Determine useless card in hand (card not needed for "straight")
+                                var uselessCard;
+                                for (var j = 0; j < HANDSIZE; j++)
+                                {
+                                	if (computerValues[j] != neededValue && straightTuple.indexOf(computerValues[j]) < 0)
+                                        {
+                                        	uselessCard = computerHand[j];
+                                        }
+                                }
+		
+				// Pick up card from discard pile or deck
+				ComputerPickFromPile(discardValue, neededValue, 1, -1, 2, uselessCard);
+			}
+				
+			// Function to let computer play
+                        function ComputerTurn()
+                        {
+				// Get computer hand suits and values
+                                var suitsAndValues = GetSuitsAndValues(computerHand);
+				computerSuits = suitsAndValues[0];
+				computerValues = suitsAndValues[1];
+
+				// Count number of same suit cards and get suit
+				var suitValues = GetValuesOfSuits(computerSuits, computerValues); // Get values of each suit
+				var sameSuitCount = 0; // Initialize count as zero
+				var sameSuitNum;
+				for (var i = 0; i < 4; i++)
+				{
+					if (suitValues[i].length > sameSuitCount)
+					{
+						sameSuitCount = suitValues[i].length;
+						sameSuitNum = i + 1;
+					}
+				}
+
+				// Count number of same value cards and get value...
+				// Construct array of all values (1 through 10) and their counts
+				var valueCounts = new Array(10);
+				for (var j = 0; j < 10; j++)
+				{
+					valueCounts[j] = 0;
+				}
+				for (var k = 0; k < 3; k++)
+				{
+					valueCounts[computerValues[k] - 1] += 1;
+				}
+				// Determine value with highest count and its count
+				var sortedValueCounts = valueCounts.slice();
+				sortedValueCounts.sort();
+				var sameValueCount = sortedValueCounts[9];
+				var sameValueNum = valueCounts.indexOf(sameValueCount) + 1;
+
+				// Determine smallest card and its value
+				var sortedValues = computerValues.slice();
+                                sortedValues.sort();
+                                var minValue = sortedValues[0];
+				var minCard = computerHand[computerValues.indexOf(minValue)];
+
+				// Get top of discard pile card, and its suit and value
+				discardCard = discardPile[0];
+				discardSuit = GetSuitsAndValues(discardPile)[0][0];
+                                discardValue = GetSuitsAndValues(discardPile)[1][0];
+
+				// Construct tuples of values for "straight"s
+                                var valueTuples = new Array(HANDSIZE);
+                                valueTuples[0] = new Array(sortedValues[0], sortedValues[1]);
+                                valueTuples[1] = new Array(sortedValues[1], sortedValues[2]);
+                                valueTuples[2] = new Array(sortedValues[0], sortedValues[2]);
+
+				// Determine if "straight"s are possible
+                                var getLowStraight = false; // Initialize "low straight" as not currently possible
+				var lowStraightIndex; // Tuple index for "low straight"
+                                var getAlmostStraight = false; // Initialize "almost straight" as not currently possible
+				var almostStraightIndex; // Tuple index for "almost straight"
+                                for (var l = 0; l < HANDSIZE; l++)
+                                {
+					// Check if "low straight" is possible
+                                        if ((valueTuples[l][0] == 1 && (valueTuples[l][1] == 2 || valueTuples[l][1] == 3))
+                                                || (valueTuples[l][0] == 2 && valueTuples[l][1] == 3))
+                                        {
+                                                getLowStraight = true;
+						lowStraightIndex = l;
+                                        }
+					// Check if "almost straight" is possible
+                                        else if ((valueTuples[l][0] == 1 || valueTuples[l][0] == 3) && valueTuples[l][1] == 4)
+                                        {
+                                                getAlmostStraight = true;
+						almostStraightIndex = l;
+                                        }
+                                }
+
+				// If computer has three cards of same suit, attempt to get higher card values
+				if (sameSuitCount == 3)
+				{
+					// Pick up card from discard pile or deck
+                                	ComputerPickFromPile(discardSuit, sameSuitNum, discardValue, minValue, 1, minCard);
+				}
+				// If computer has two cards of same value, attempt to get third card of same value for "three of a kind"
+				else if (sameValueCount == 2)
+                                {
+					// Determine useless card in hand (card not of same value)
+                                        var uselessCard = ComputerGetUselessCard(computerValues, sameValueNum);
+					                               	
+					// Pick up card from discard pile or deck
+                                	ComputerPickFromPile(discardValue, sameValueNum, 1, -1, 2, uselessCard); 
+                                }
+				// If computer has two cards for possible "low straight", attempt to get third card for "low straight"
+				else if (getLowStraight == true)
+				{
+					// Attempt to get card for "low straight"
+					var lowStraightTuple = valueTuples[lowStraightIndex];
+					ComputerGetStraight("low", lowStraightTuple);
+				}
+				// If computer has two cards for possible "almost straight", attempt to get third card for "almost straight"
+				else if (getAlmostStraight == true)
+				{
+					// Attempt to get card for "almost straight"
+					var almostStraightTuple = valueTuples[almostStraightIndex];
+					ComputerGetStraight("almost", almostStraightTuple);
+				}
+				// If computer has two cards of same suit, attempt to get third card of same suit for sum score
+				else if (sameSuitCount == 2)
+                                {
+                                        // Determine useless card in hand (card not of same suit)
+                                        var uselessCard = ComputerGetUselessCard(computerSuits, sameSuitNum);
+              
+					// Pick up card from discard pile or deck
+                                	ComputerPickFromPile(discardSuit, sameSuitNum, 1, -1, 1, uselessCard);
+                                }
+				// If computer has no cards of same suit, attempt to get second card of some suit in hand
+				else
+				{
+					// Check if discard card has large value (8, 9, or 10) and is of some suit in hand
+					if (discardPile.length > 0 && discardValue >= 8
+						&& (discardSuit == computerSuits[0] || discardSuit == computerSuits[1] || discardSuit == computerSuits[2]))
+					{
+						// Determine useless card in hand (smallest card not of some suit)
+						var uselessCard = ComputerGetSmallDiffCard(discardSuit);
+						
+						// Swap useless card with discard card
+                                                ComputerSwapWithDiscard(uselessCard);
+                                        }
+					// Otherwise, check in deck
+					else{
+						// Get next card from deck
+                                                var nextCardInfo = ComputerGetNextCard();
+
+						// Check if next card is of some suit in hand
+						if (nextCardInfo[1] == computerSuits[0] || nextCardInfo[1] == computerSuits[1] || nextCardInfo[1] == computerSuits[2])
+                                                {
+							// Determine useless card in hand (smallest card not of same suit)
+                                               		var uselessCard = ComputerGetSmallDiffCard(nextCardInfo[1]);
+                                                        // Discard useless card in hand
+                                                        computerHand[computerHand.indexOf(uselessCard)] = nextCardInfo[0];
+                                                        discardPile.unshift(uselessCard);
+                                                }
+						// Otherwise, discard next card
+                                                else
+                                                {
+                                                        discardPile.unshift(nextCardInfo[0]);
+                                                }
+                                        }
+				}
+
+				// Update discard pile
+				UpdateDiscardPile();
+				
+				// Update computer card images
+                                for (var m = 0; m < HANDSIZE; m++)
+                                {
+					computerCardImgs[m] = "<img src='cards/" + computerHand[m] + ".png' />";
+                                }
+
+                                // End computer's turn and show round results
+                                ShowResults();
+                        }
+
+			// Function for picking up new card
+			function GetNewCard(pile)
+			{
+				// Pick up new card when allowed
+				if (canDraw == true)
+				{
+					// Pick up new card from deck if desired
+					if (pile.id == "deck")
+					{
+						newCard = shuffledDeck[deckIndex++];
+					}
+					// Pick up new card from discard pile if desired
+					else if (pile.id == "discard")
+					{
+						// Get new card from discard pile
+						newCard = discardPile[0];
+						discardPile.splice(0, 1);
+
+						// Update discard pile
+						UpdateDiscardPile();
+					}
+
+					// Add new card to player hand
+					playerHand.push(newCard);
+
+					// Display new card in hand
+					newCardImg = "<img src='cards/" + newCard + ".png' />";
+					playerCardImgs.push(newCardImg);
+					document.getElementById("playerCard4").innerHTML = newCardImg;
+					document.getElementById("playerCard4").style.display = "inline-block";
+				
+					// Allow and tell player to select card to discard from hand
+					canDraw = false;
+					canDiscard = true;
+					document.getElementById("instructions").innerHTML = "Choose a card from your hand you wish to discard. Press 'Discard' when ready.";
+					document.getElementById("discardButton").style.display = "inline-block";
+
+					 // Undraw borders around cards to select from
+                                	 document.getElementById("deck").style.border = "";
+                               		 document.getElementById("discard").style.border = "";
+
+					// Draw borders around cards that can be discarded
+					for (var i = 0; i < 4; i++)
+					{
+						var playerCard = "playerCard" + (i + 1);
+						document.getElementById(playerCard).style.border = "5px solid #0DFF4A";
+					}
+				}
+			}
+
+			// Function to select card to discard from hand
+			function SelectDiscardCard(card)
+			{
+				// Select card when allowed
+				if (canDiscard == true)
+				{
+					// Get selected card id and index
+					var cardId = card.id;
+					playerDiscardIndex = parseInt(cardId.substring(cardId.length - 1)) - 1;
+
+					// Draw borders around cards that can be discarded
+                                        for (var i = 0; i < 4; i++)
+                                        {
+                                                var playerCard = "playerCard" + (i + 1);
+                                                document.getElementById(playerCard).style.border = "5px solid #0DFF4A";
+                                        }
+
+					// Draw red border around selected card
+					document.getElementById(cardId).style.border = "5px solid #FF0000";
+
+					// Allow player to discard selected card
+					document.getElementById("discardButton").disabled = false;
+				}
+			}
+
+			// Function to discard selected card from hand
+			function Discard()
+			{       
+				// Discard selected card from hand
+				discardPile.unshift(playerHand[playerDiscardIndex]);
+				playerHand.splice(playerDiscardIndex, 1);
+
+				// Update player card images and undraw borders
+				document.getElementById("playerCard4").style.display = "none";
+				playerCardImgs.splice(playerDiscardIndex, 1);
+				for (var i = 0; i < HANDSIZE; i++)
+				{
+					var playerCard = "playerCard" + (i + 1);
+                                       	document.getElementById(playerCard).innerHTML = playerCardImgs[i];
+					document.getElementById(playerCard).style.border = "";
+				}
+
+				// Add to and update discard pile
+				document.getElementById("discard").style.visibility = "visible";
+				UpdateDiscardPile();
+				
+				// Make and tell player to wait for computer to play
+				canDiscard = false;
+				document.getElementById("discardButton").style.display = "";
+				document.getElementById("discardButton").disabled = true;
+				document.getElementById("instructions").innerHTML = "Waiting for the computer player...";
+
+				// Let computer play
+				ComputerTurn();
+			}
+
+			// Initialization function
+			function Start()
+			{
+				// Prompt player for name at start of first game
+				if (currentGame == 0)
+				{
+					var playerName = prompt("Please enter your name. If nothing is entered, you will be named 'Player':");
+
+					// Display player name
+					if (playerName != "")
+					{
+						document.getElementById("pName").innerHTML = playerName;
+					}
+				}				
+
+				// Increment current game
+				currentGame += 1;
+				document.getElementById("gameNum").innerHTML = currentGame;
+
+				// Initialize current round as first
+				currentRound = 1;
+				document.getElementById("roundNum").innerHTML = currentRound;
+
+				// Initialize scores as zero
+				playerScore = 0;
+				computerScore = 0;
+				document.getElementById("pScore").innerHTML = 0;
+				document.getElementById("cScore").innerHTML = 0;
+
+				// Initialize player as waiting to play
+				canDraw = false;
+				canDiscard = false;
+				
+				Shuffle(); // Shuffle starting deck
+				Deal(); // Deal out cards to players
+			}
+		</script>
+	</head>
+	<body>
+		<center>
+			<div class="wrapper">
+				<div class="stats">
+					<div class="playerStats">
+						<span id="pName" style="text-decoration: underline">Player</span>
+						<br>
+						<span id="pScore">0</span>
+						<br>
+						<span id="pWins">0</span>
+						<br>
+						<span style="text-decoration: overline">won</span>
+					</div>
+					<div class="gameStats">
+						<span id="title">Xarnker</span>
+						<br>
+						Hand: <span id="roundNum">0</span> / 3
+						<br>
+						Game: <span id="gameNum">0</span> / 5
+					</div>
+					<div class="computerStats">
+						<span style="text-decoration: underline">Computer</span>
+						<br>
+						<span id="cScore">0</span>
+						<br>
+						<span id="cWins">0</span>
+						<br>
+						<span style="text-decoration: overline">won</span>
+					</div>
+				</div>
+				<div class="cards">
+					<div class="computerCards">
+						<span id="computerCard1"></span>
+						<span id="computerCard2"></span>
+						<span id="computerCard3"></span>
+					</div>
+					<div class="piles">
+						<span id="deck" onclick="GetNewCard(deck)"></span>
+						<span id="discard" onclick="GetNewCard(discard)"></span>
+					</div>
+					<div class="playerCards">
+						<span id="playerCard1" onclick="SelectDiscardCard(playerCard1)"></span>
+						<span id="playerCard2" onclick="SelectDiscardCard(playerCard2)"></span>
+						<span id="playerCard3" onclick="SelectDiscardCard(playerCard3)"></span>
+						<span id="playerCard4" onclick="SelectDiscardCard(playerCard4)"></span>
+					</div>
+				</div>
+				<div class="hud">
+					<input type="button" id="newGameButton" value="Start Playing!" onclick="Start()">
+					<input type="button" id="discardButton" value="Discard" onclick="Discard()" disabled>
+					<p id="instructions">Welcome to Xarnker! Press 'Start Playing!' to begin.</p>
+				</div>
+			</div>
+		</center>
+	</body>
+</html>
